@@ -31,3 +31,29 @@ async def get_response(user_prompt: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Run the application using: uvicorn app.main:app --reload
+
+
+##Hugging Face Configuration
+from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Get API key from environment variables (not needed if using local model)
+api_key = os.getenv("HUGGINGFACE_API_KEY")
+
+# Define the repository ID
+repo_id = "facebook/m2m100_418M"
+
+# Initialize the model and tokenizer
+model = M2M100ForConditionalGeneration.from_pretrained(repo_id)
+tokenizer = M2M100Tokenizer.from_pretrained(repo_id)
+
+def translate_text(text, target_lang):
+    tokenizer.src_lang = "en"
+    encoded_text = tokenizer(text, return_tensors="pt")
+    generated_tokens = model.generate(**encoded_text, forced_bos_token_id=tokenizer.get_lang_id(target_lang))
+    translated_text = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
+    return translated_text
