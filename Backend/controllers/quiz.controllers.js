@@ -63,15 +63,17 @@ const startQuiz = async (req, res) => {
       return res.status(404).json({ message: "User or Quiz not found" });
     }
 
-    const existingAttempt = await Attempt.findOne({
+    const existingAttempt = await Attempt.find({
       user: userId,
       quiz: quizId,
     });
 
-    if (existingAttempt.isPassed) {
-      return res
-        .status(400)
-        .json({ message: "You have already passed this quiz" });
+    for (const attempt of existingAttempt) {
+      if (attempt.isPassed) {
+        return res
+          .status(400)
+          .json({ message: "You have already passed this quiz" });
+      }
     }
 
     const attempt = new Attempt({

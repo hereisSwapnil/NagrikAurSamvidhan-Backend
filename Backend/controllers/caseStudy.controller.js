@@ -71,15 +71,17 @@ const startCaseStudy = async (req, res) => {
       return res.status(404).json({ message: "User or Case Study not found" });
     }
 
-    const existingAttempt = await Attempt.findOne({
+    const existingAttempt = await Attempt.find({
       user: userId,
       caseStudy: caseStudyId,
     });
 
-    if (existingAttempt && existingAttempt.isPassed) {
-      return res
-        .status(400)
-        .json({ message: "You have already passed this case study" });
+    for (const attempt of existingAttempt) {
+      if (attempt.isPassed) {
+        return res
+          .status(400)
+          .json({ message: "You have already passed this case study" });
+      }
     }
 
     const attempt = new Attempt({
