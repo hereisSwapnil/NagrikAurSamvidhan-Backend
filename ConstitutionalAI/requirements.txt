@@ -6,3 +6,8 @@ langchain_google_genai
 langchain_community
 python-dotenv
 faiss-cpu
+langchain-huggingface
+python-dotenv
+sentencepiece
+transformers 
+huggingface_hub

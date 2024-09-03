@@ -1,36 +1,24 @@
-from dotenv import load_dotenv
-import os
-from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
 from fastapi import FastAPI, HTTPException
 from app.config import Config
-from app.utils.loader import create_prompt_template
+from app.utils.loader import create_prompt_template, tokenizer, model, llm
 from app.services.embedding_service import create_embeddings
 from app.services.response_service import get_response_from_chain
-from langchain_groq import ChatGroq
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Initialize the language model
-llm = ChatGroq(model="llama3-70b-8192")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Load prompt template
 prompt_template = create_prompt_template()
 
-# Create vector embeddings
-vectors = create_embeddings('./data')
-
-# Load environment variables
-load_dotenv()
-
-# Get API key from environment variables (not needed if using local model)
-api_key = os.getenv("HUGGINGFACE_API_KEY")
-
-# Define the repository ID
-repo_id = "facebook/m2m100_418M"
-
-# Initialize the model and tokenizer
-model = M2M100ForConditionalGeneration.from_pretrained(repo_id)
-tokenizer = M2M100Tokenizer.from_pretrained(repo_id)
+# Initialize embeddings at startup for efficiency
+vectors = create_embeddings()
 
 
 def translate_text(text, target_lang):
@@ -53,6 +41,15 @@ async def get_response(user_prompt: str):
         answer = get_response_from_chain(
             llm, prompt_template, vectors, user_prompt)
         return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/translate/")
+async def translate(text: str, target_lang: str):
+    try:
+        translation = translate_text(text, target_lang)
+        return {"translation": translation}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
