@@ -31,15 +31,12 @@ const attemptSchema = new mongoose.Schema({
       },
       answer: {
         type: String,
-        required: true,
       },
       correct: {
         type: Boolean,
-        required: true,
       },
       correctAnswer: {
         type: String,
-        required: true,
       },
       hintTaken: {
         type: Boolean,

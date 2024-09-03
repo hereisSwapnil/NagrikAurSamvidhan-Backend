@@ -111,25 +111,34 @@ const getHint = async (req, res) => {
       return res.status(404).json({ message: "Attempt not found" });
     }
 
-    const question = attempt.questions.find(
-      (q) => q.questionId.toString() === questionId
-    );
+    const question = await Question.findById(questionId);
 
     if (!question) {
       return res.status(404).json({ message: "Question not found" });
     }
 
-    if (question.hintTaken) {
-      return res.status(400).json({ message: "Hint already taken" });
+    for (const q of attempt.questions) {
+      if (q.questionId.toString() === questionId) {
+        return res
+          .status(200)
+          .json({ message: "Hint already taken", hint: question.hint });
+      }
     }
 
-    question.hintTaken = true;
+    const newQuestion = {
+      questionId,
+      hintTaken: true,
+    };
+
+    attempt.questions.push(newQuestion);
 
     await attempt.save();
 
-    res
-      .status(200)
-      .json({ message: "Hint taken successfully", hint: question.hint });
+    res.status(200).json({
+      success: true,
+      message: "Hint taken successfully",
+      hint: question.hint,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -164,13 +173,14 @@ const submitQuestion = async (req, res) => {
     const isCorrect = question.correctOption === answer;
 
     if (existingQuestion) {
+      if (existingQuestion.isSubmitted) {
+        console.log("question: ", existingQuestion);
+        return res.status(400).json({ message: "Question already submitted" });
+      }
+
       existingQuestion.answer = answer;
       existingQuestion.correct = isCorrect;
       existingQuestion.isSubmitted = true;
-
-      if (existingQuestion.isSubmitted) {
-        return res.status(400).json({ message: "Question already submitted" });
-      }
 
       if (isCorrect) {
         attempt.numberOfCorrectAnswers += 1;

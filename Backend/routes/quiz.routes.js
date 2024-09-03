@@ -16,6 +16,6 @@ router.post("/", addQuiz);
 router.get("/start/:quizId", verifyToken, startQuiz);
 router.get("/hint/:attemptId", verifyToken, getHint);
 router.post("/submitquestion/:attemptId", verifyToken, submitQuestion);
-router.get("/submitquiz/:attemptId", verifyToken, submitQuiz);
+router.get("/submit/:attemptId", verifyToken, submitQuiz);
 
 module.exports = router;
