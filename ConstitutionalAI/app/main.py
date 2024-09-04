@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from app.config import Config
-from app.utils.loader import create_prompt_template, tokenizer, model, llm
+from app.utils.loader import create_prompt_template_legal_expert, create_prompt_template_educational_expert, tokenizer, model, llm
 from app.services.embedding_service import create_embeddings
 from app.services.response_service import get_response_from_chain
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-prompt_template = create_prompt_template()
+prompt_template_legal_expert = create_prompt_template_legal_expert()
+prompt_template_educational_expert = create_prompt_template_educational_expert()
 
 # Initialize embeddings at startup for efficiency
 vectors = create_embeddings()
@@ -31,7 +32,7 @@ def translate_text(text, target_lang):
     return translated_text
 
 
-@app.post("/get_response/")
+@app.post("/get_educational/")
 async def get_response(user_prompt: str):
     if vectors is None:
         raise HTTPException(
@@ -39,7 +40,21 @@ async def get_response(user_prompt: str):
         )
     try:
         answer = get_response_from_chain(
-            llm, prompt_template, vectors, user_prompt)
+            llm, prompt_template_educational_expert, vectors, user_prompt)
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/get_legal/")
+async def get_response(user_prompt: str):
+    if vectors is None:
+        raise HTTPException(
+            status_code=400, detail="Embeddings not activated. Please activate embeddings first."
+        )
+    try:
+        answer = get_response_from_chain(
+            llm, prompt_template_legal_expert, vectors, user_prompt)
         return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
