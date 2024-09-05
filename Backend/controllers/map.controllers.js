@@ -183,6 +183,7 @@ const getMapByDifficulty = async (req, res) => {
           _id: caseStudy._id,
           title: caseStudy.title,
           duration: caseStudy.duration,
+          description: caseStudy.description,
           totalQuestions: caseStudy.totalQuestions,
           difficulty: caseStudy.difficulty,
           isPassed,
@@ -195,6 +196,7 @@ const getMapByDifficulty = async (req, res) => {
         mapData.push({
           _id: caseStudy._id,
           title: caseStudy.title,
+          description: caseStudy.description,
           duration: caseStudy.duration,
           totalQuestions: caseStudy.totalQuestions,
           difficulty: caseStudy.difficulty,
