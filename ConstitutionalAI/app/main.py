@@ -32,7 +32,7 @@ def translate_text(text, target_lang):
     return translated_text
 
 
-@app.post("/get_educational/")
+@app.post("/get_educational")
 async def get_response(user_prompt: str):
     if vectors is None:
         raise HTTPException(
@@ -46,7 +46,7 @@ async def get_response(user_prompt: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/get_legal/")
+@app.post("/get_legal")
 async def get_response(user_prompt: str):
     if vectors is None:
         raise HTTPException(
@@ -60,7 +60,7 @@ async def get_response(user_prompt: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/translate/")
+@app.post("/translate")
 async def translate(text: str, target_lang: str):
     try:
         translation = translate_text(text, target_lang)

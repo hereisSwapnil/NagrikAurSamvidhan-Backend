@@ -122,6 +122,8 @@ const getMapByDifficulty = async (req, res) => {
         attempts.length > 0 ? (score / quiz.totalQuestions) * 100 : 0;
 
       // Iterate over attempts to check if the quiz is passed and to calculate score and percentage
+      attempts.sort((a, b) => b.score - a.score);
+      console.log(attempts);
       for (const attempt of attempts) {
         if (attempt.isPassed) {
           isPassed = true;
@@ -141,8 +143,8 @@ const getMapByDifficulty = async (req, res) => {
           difficulty: quiz.difficulty,
           isPassed,
           isAttempted,
-          score,
-          percentage: percentage.toFixed(0),
+          score: attempts[0].score,
+          percentage: (attempts[0].score / quiz.totalQuestions) * 100,
           type: "Quiz",
         });
       } else {
