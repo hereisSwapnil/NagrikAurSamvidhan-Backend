@@ -10,3 +10,4 @@ langchain-huggingface
 sentencepiece
 transformers 
 huggingface_hub
+pypdf
