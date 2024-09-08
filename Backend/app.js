@@ -5,7 +5,31 @@ const methodOverride = require("method-override");
 
 const app = express();
 
-app.use(cors({ origin: process.env.ORIGIN, credentials: true }));
+const allowedOrigins = [
+  "https://sih-2024-zeta.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        // If the origin is in the allowedOrigins array
+        callback(null, true);
+      } else {
+        // If the origin is not in the allowedOrigins array
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Enable credentials for CORS requests
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
