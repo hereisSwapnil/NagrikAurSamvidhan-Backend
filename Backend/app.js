@@ -43,6 +43,8 @@ const questionRoutes = require("./routes/question.routes.js");
 const quizRoutes = require("./routes/quiz.routes.js");
 const mapRoutes = require("./routes/map.routes.js");
 const caseStudyRoutes = require("./routes/caseStudy.routes.js");
+const fundamentalRightRoutes = require("./routes/fundamentalRight.routes.js"); 
+
 
 // routes declare
 app.use("/user", userRoutes);
@@ -50,6 +52,8 @@ app.use("/question", questionRoutes);
 app.use("/quiz", quizRoutes);
 app.use("/map", mapRoutes);
 app.use("/casestudy", caseStudyRoutes);
+app.use("/fundamental-rights", fundamentalRightRoutes); 
+
 
 app.get("/", (req, res) => {
   res.send("Yupp The server is runnng 🎉 !");
