@@ -1,6 +1,6 @@
 // preamble.controllers.js
 
-const Preamble = require('../models/preamble.model.js');
+const Preamble = require("../models/preamble.model.js");
 
 // Function to fetch all preamble data
 const getAllPreambles = async (req, res) => {
@@ -13,5 +13,5 @@ const getAllPreambles = async (req, res) => {
 };
 
 module.exports = {
-  getAllPreambles
+  getAllPreambles,
 };
