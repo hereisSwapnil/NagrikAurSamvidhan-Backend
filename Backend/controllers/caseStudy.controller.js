@@ -76,13 +76,13 @@ const startCaseStudy = async (req, res) => {
       caseStudy: caseStudyId,
     });
 
-    for (const attempt of existingAttempt) {
-      if (attempt.isPassed) {
-        return res
-          .status(400)
-          .json({ message: "You have already passed this case study" });
-      }
-    }
+    // for (const attempt of existingAttempt) {
+    //   if (attempt.isPassed) {
+    //     return res
+    //       .status(400)
+    //       .json({ message: "You have already passed this case study" });
+    //   }
+    // }
 
     const attempt = new Attempt({
       user: userId,
