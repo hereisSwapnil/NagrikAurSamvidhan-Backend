@@ -13,9 +13,15 @@ from dotenv import load_dotenv
 import os
 import google.generativeai as genai
 from datetime import datetime, timedelta
+import logging
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Config class
 
@@ -36,6 +42,7 @@ llm = ChatGroq(model="llama3-70b-8192")
 
 
 def create_embeddings(pdf_dir: str = Config.PDF_DIRECTORY, model_name: str = Config.EMBEDDING_MODEL):
+    logger.info("Creating embeddings...")
     embeddings = GoogleGenerativeAIEmbeddings(model=model_name)
     loader = PyPDFDirectoryLoader(pdf_dir)
     documents = loader.load()
@@ -43,18 +50,23 @@ def create_embeddings(pdf_dir: str = Config.PDF_DIRECTORY, model_name: str = Con
         chunk_size=1000, chunk_overlap=200)
     final_documents = text_splitter.split_documents(documents)
     vectors = FAISS.from_documents(final_documents, embeddings)
+    logger.info("Embeddings created successfully.")
     return vectors
 
 # Function to get response from chain
 
 
 def get_response_from_chain(llm, prompt_template, vectors, user_prompt, language):
+    logger.info(f"Processing user prompt: '{
+                user_prompt}' in language: '{language}'")
     document_chain = create_stuff_documents_chain(llm, prompt_template)
     retriever = vectors.as_retriever()
     retriever_chain = create_retrieval_chain(retriever, document_chain)
     response = retriever_chain.invoke(
         {'input': user_prompt, 'language': language})
-    return response.get('answer')
+    answer = response.get('answer')
+    logger.info("Response generated successfully.")
+    return answer
 
 # Define prompt templates
 
@@ -119,27 +131,30 @@ prompt_template_educational_expert = create_prompt_template_educational_expert()
 
 
 @app.post("/get_educational")
-async def get_response(user_prompt: str, language: str):
+async def get_response_educational(user_prompt: str, language: str):
     try:
         answer = get_response_from_chain(
             llm, prompt_template_educational_expert, vectors, user_prompt, language)
         answer = answer.replace("\n", "<br>")
+        logger.info(f"Educational response: {answer}\n\n")
         return {"answer": answer}
     except Exception as e:
+        logger.error(f"Error occurred: {str(e)}\n")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Legal endpoint
 
 
 @app.post("/get_legal")
-async def get_response(user_prompt: str, language: str):
+async def get_response_legal(user_prompt: str, language: str):
     try:
         answer = get_response_from_chain(
             llm, prompt_template_legal_expert, vectors, user_prompt, language)
         answer = answer.replace("\n", "<br>")
+        logger.info(f"Legal response: {answer}\n\n")
         return {"answer": answer}
     except Exception as e:
+        logger.error(f"Error occurred: {str(e)}\n")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # To run the application use: uvicorn main:app --reload
