@@ -68,13 +68,13 @@ const startQuiz = async (req, res) => {
       quiz: quizId,
     });
 
-    for (const attempt of existingAttempt) {
-      if (attempt.isPassed) {
-        return res
-          .status(400)
-          .json({ message: "You have already passed this quiz" });
-      }
-    }
+    // for (const attempt of existingAttempt) {
+    //   if (attempt.isPassed) {
+    //     return res
+    //       .status(400)
+    //       .json({ message: "You have already passed this quiz" });
+    //   }
+    // }
 
     const attempt = new Attempt({
       user: userId,

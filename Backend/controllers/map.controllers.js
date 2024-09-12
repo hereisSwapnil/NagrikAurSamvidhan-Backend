@@ -216,7 +216,56 @@ const getMapByDifficulty = async (req, res) => {
 const getCaseStudies = async (req, res) => {
   try {
     const caseStudies = await CaseStudy.find().select("-questions -__v");
-    res.status(200).json(caseStudies);
+    const mapData = [];
+
+    for (const caseStudy of caseStudies) {
+      const attempts = await Attempt.find({ caseStudy: caseStudy._id });
+
+      // Default values for the quiz status
+      let isPassed = false;
+      let isAttempted = attempts.length > 0;
+      let score = attempts.length > 0 ? attempts[0].score : 0;
+      let percentage =
+        attempts.length > 0 ? (score / caseStudy.totalQuestions) * 100 : 0;
+
+      // Iterate over attempts to check if the quiz is passed and to calculate score and percentage
+      for (const attempt of attempts) {
+        if (attempt.isPassed) {
+          isPassed = true;
+          score = attempt.score;
+          percentage = (score / attempt.numberOfQuestions) * 100;
+          break; // Once we find a passed attempt, no need to continue checking
+        }
+      }
+
+      // Push quiz data along with additional properties into the response array
+      if (isAttempted) {
+        mapData.push({
+          _id: caseStudy._id,
+          title: caseStudy.title,
+          duration: caseStudy.duration,
+          description: caseStudy.description,
+          totalQuestions: caseStudy.totalQuestions,
+          difficulty: caseStudy.difficulty,
+          isPassed,
+          isAttempted,
+          score,
+          percentage: percentage.toFixed(0),
+          type: "CaseStudy",
+        });
+      } else {
+        mapData.push({
+          _id: caseStudy._id,
+          title: caseStudy.title,
+          description: caseStudy.description,
+          duration: caseStudy.duration,
+          totalQuestions: caseStudy.totalQuestions,
+          difficulty: caseStudy.difficulty,
+          type: "CaseStudy",
+        });
+      }
+    }
+    res.status(200).json(mapData);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
