@@ -7,6 +7,7 @@ const {
   submitCaseStudy,
   getHint,
 } = require("../controllers/caseStudy.controller");
+const { getCaseStudies } = require("../controllers/map.controllers");
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.get("/start/:caseStudyId", verifyToken, startCaseStudy);
 router.get("/hint/:attemptId", verifyToken, getHint);
 router.post("/submitquestion/:attemptId", verifyToken, submitQuestion);
 router.get("/submit/:attemptId", verifyToken, submitCaseStudy);
+router.get("/", verifyToken, getCaseStudies);
 
 module.exports = router;

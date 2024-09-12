@@ -213,7 +213,17 @@ const getMapByDifficulty = async (req, res) => {
   }
 };
 
+const getCaseStudies = async (req, res) => {
+  try {
+    const caseStudies = await CaseStudy.find().select("-questions -__v");
+    res.status(200).json(caseStudies);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
 module.exports = {
   getMap,
   getMapByDifficulty,
+  getCaseStudies,
 };
