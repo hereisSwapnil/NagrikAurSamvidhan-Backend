@@ -57,8 +57,7 @@ def create_embeddings(pdf_dir: str = Config.PDF_DIRECTORY, model_name: str = Con
 
 
 def get_response_from_chain(llm, prompt_template, vectors, user_prompt, language):
-    logger.info(f"Processing user prompt: '{
-                user_prompt}' in language: '{language}'")
+    logger.info(f"Processing user prompt: '{user_prompt}' in language: '{language}'")
     document_chain = create_stuff_documents_chain(llm, prompt_template)
     retriever = vectors.as_retriever()
     retriever_chain = create_retrieval_chain(retriever, document_chain)
