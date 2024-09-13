@@ -46,6 +46,7 @@ const caseStudyRoutes = require("./routes/caseStudy.routes.js");
 const fundamentalRightRoutes = require("./routes/fundamentalRight.routes.js");
 const preambleRoutes = require("./routes/preamble.routes.js");
 const gridRoutes = require("./routes/grid.routes.js");
+const feedbackRoutes = require("./routes/feedback.routes.js");
 
 // routes declare
 app.use("/user", userRoutes);
@@ -56,6 +57,7 @@ app.use("/casestudy", caseStudyRoutes);
 app.use("/fundamental-rights", fundamentalRightRoutes);
 app.use("/preamble", preambleRoutes);
 app.use("/grid", gridRoutes);
+app.use("/feedback", feedbackRoutes);
 
 app.get("/", (req, res) => {
   res.send("Yupp The server is runnng 🎉 !");

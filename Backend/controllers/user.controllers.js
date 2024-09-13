@@ -143,9 +143,85 @@ const getUser = wrapAsync(async (req, res) => {
   });
 });
 
+const updateUser = wrapAsync(async (req, res) => {
+  try {
+    const {
+      name,
+      password,
+      age,
+      gender,
+      phoneNumber,
+      address,
+      city,
+      state,
+      language,
+    } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        success: false,
+      });
+    }
+
+    if (name) {
+      user.name = name;
+    }
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+    }
+
+    if (age) {
+      user.age = age;
+    }
+
+    if (gender) {
+      user.gender = gender;
+    }
+
+    if (phoneNumber) {
+      user.phoneNumber = phoneNumber;
+    }
+
+    if (address) {
+      user.address = address;
+    }
+
+    if (city) {
+      user.city = city;
+    }
+
+    if (state) {
+      user.state = state;
+    }
+
+    if (language) {
+      user.language = language;
+    }
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      success: true,
+      user: updatedUser,
+      message: "User updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+      success: false,
+    });
+  }
+});
+
 module.exports = {
   registerUser,
   loginUser,
   logoutUser,
   getUser,
+  updateUser,
 };
