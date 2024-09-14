@@ -27,6 +27,12 @@ const caseStudySchema = new mongoose.Schema({
     type: String,
     enum: ["Prarambhik", "Madhyam", "Maharathi"],
   },
+  image: {
+    type: String,
+  },
+  url: {
+    type: String,
+  },
 });
 
 const CaseStudy = mongoose.model("CaseStudy", caseStudySchema);

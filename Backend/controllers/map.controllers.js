@@ -252,6 +252,8 @@ const getCaseStudies = async (req, res) => {
           score,
           percentage: percentage.toFixed(0),
           type: "CaseStudy",
+          image: caseStudy.image,
+          url: caseStudy.url,
         });
       } else {
         mapData.push({
@@ -262,6 +264,8 @@ const getCaseStudies = async (req, res) => {
           totalQuestions: caseStudy.totalQuestions,
           difficulty: caseStudy.difficulty,
           type: "CaseStudy",
+          image: caseStudy.image,
+          url: caseStudy.url,
         });
       }
     }
