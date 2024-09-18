@@ -57,8 +57,7 @@ def create_embeddings(pdf_dir: str = Config.PDF_DIRECTORY, model_name: str = Con
 
 
 def get_response_from_chain(llm, prompt_template, vectors, user_prompt, language):
-    logger.info(f"Processing user prompt: '{
-                user_prompt}' in language: '{language}'")
+    logger.info(f"Processing user prompt: '{user_prompt}' in language: '{language}'")
     document_chain = create_stuff_documents_chain(llm, prompt_template)
     retriever = vectors.as_retriever()
     retriever_chain = create_retrieval_chain(retriever, document_chain)
@@ -77,15 +76,21 @@ def create_prompt_template_legal_expert():
         You are an expert legal assistant with in-depth knowledge of legal intricacies, skilled at referencing and applying relevant laws, regulations, sections, and articles. Your role is to provide users with clear, concise, and actionable advice based strictly on legal principles.
         When responding to user queries:
 
-        Focus on specific legal aspects of the issue, referencing the relevant laws, sections, and articles applicable to the situation.
-        Provide practical, actionable steps the user can take to address their legal issue.
-        If a query falls outside your expertise or you are unsure, maintain integrity by advising the user to consult a legal professional or simply state, "I don't know."
-        Responses should be precise, focusing strictly on the legal advice needed to resolve the issue.
+        - Focus on specific legal aspects of the issue, referencing the relevant laws, sections, and articles applicable to the situation.
+        - Provide practical, actionable steps the user can take to address their legal issue.
+        - If a query falls outside your expertise or you are unsure, maintain integrity by advising the user to consult a legal professional or simply state, "I don't know."
+        - Responses should be precise, focusing strictly on the legal advice needed to resolve the issue.
+
         Internal Structure:
 
-        Context: {context}
-        Question: {input}
+        - **Context**: {context}
+        - **Question**: {input}
+        
+        Ignore if the user ask to give the response in a specific language in the asked question.
+
+        If the input is a greeting, respond politely by acknowledging the greeting and offering your assistance with legal advice.
         Your response should be delivered in {language} and should focus exclusively on providing relevant legal advice.
+        Do not include any other word in any other language except {language} in the response.
         '''
     )
 
@@ -96,19 +101,41 @@ def create_prompt_template_educational_expert():
         You are an expert educational assistant with a deep understanding of the Indian Constitution and related legal frameworks. Your role is to help users interpret, analyze, and explain questions, cases, and incidents within the context of constitutional law.
         When answering user questions, your responses should be:
 
-        Concise and to the point, focusing on the relevant constitutional articles, legal principles, and precedents.
-        Analytical, breaking down complex legal matters into clear, understandable parts with reference to the Indian Constitution.
-        Supportive, offering explanations and summaries that enhance the user's understanding of constitutional provisions, case law, or legal implications.
-        Use relevant examples, case law, or past judgments to strengthen the analysis.
-        End with suggestions for further study or reading, such as related case law, articles of the Constitution, or legal commentaries if necessary.
+        - Concise and to the point, focusing on the relevant constitutional articles, legal principles, and precedents.
+        - Analytical, breaking down complex legal matters into clear, understandable parts with reference to the Indian Constitution.
+        - Supportive, offering explanations and summaries that enhance the user's understanding of constitutional provisions, case law, or legal implications.
+        - Use relevant examples, case law, or past judgments to strengthen the analysis.
+        - End with suggestions for further study or reading, such as related case law, articles of the Constitution, or legal commentaries if necessary.
+
         Internal Structure:
 
-        Context: {context}
-        Question: {input}
+        - **Context**: {context}
+        - **Question**: {input}
+        
+        Ignore if the user ask to give the response in a specific language in the asked question.
+        
+        If the input is a greeting, respond politely and briefly acknowledge the greeting before asking how you can assist the user with constitutional law matters.
         Your response must analyze the question based on the provisions of the Indian Constitution and should be in {language} as specified by the user.
+        Do not include any other word in any other language except {language} in the response.
         '''
     )
 
+def create_prompt_template_summarize():
+    return ChatPromptTemplate.from_template(
+        '''
+        You are an expert constitutional article summarizer with in-depth knowledge of constitution, skilled at explaining things. Your role is to provide users with clear, concise summary of constitutional articles.
+
+        If a query falls outside your expertise or you are unsure, simply state, "I don't know."
+        Responses should brief and should be in the form of markdown.
+        Internal Structure:
+
+        Context: {context}
+        Article to summarize: {input}
+        
+        Your response should be delivered in {language} and should be strictly in markdown language.
+        Do not include any other word in any other language except {language} in the response.
+        '''
+    )
 
 # Initialize embeddings
 vectors = create_embeddings()
@@ -128,6 +155,7 @@ app.add_middleware(
 # Load prompt templates
 prompt_template_legal_expert = create_prompt_template_legal_expert()
 prompt_template_educational_expert = create_prompt_template_educational_expert()
+prompt_template_summarize = create_prompt_template_summarize()
 
 
 @app.post("/get_educational")
@@ -153,6 +181,18 @@ async def get_response_legal(user_prompt: str, language: str):
         answer = answer.replace("\n", "<br>")
         logger.info(f"Legal response: {answer}\n\n")
         return {"answer": answer}
+    except Exception as e:
+        logger.error(f"Error occurred: {str(e)}\n")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/get_summary")
+async def get_summary(user_prompt: str, language: str):
+    try:
+        answer = get_response_from_chain(
+            llm, prompt_template_summarize, vectors, user_prompt, language)
+        answer = answer.replace("\n", "<br>")
+        logger.info(f"Summary: {answer}\n\n")
+        return {"summary": answer}
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}\n")
         raise HTTPException(status_code=500, detail=str(e))
