@@ -3,7 +3,7 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/9a9a97da-47db-436c-9e4b-16124982319b">
-    <img alt="Logo" src="https://github.com/user-attachments/assets/9a9a97da-47db-436c-9e4b-16124982319b" style="width: 30px; height: auto;">
+    <img alt="Logo" src="https://github.com/user-attachments/assets/9a9a97da-47db-436c-9e4b-16124982319b" style="width: 300px; height: auto;">
   </picture>
 </div>
 <div align="center">
