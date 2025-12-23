@@ -1,14 +1,16 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_classic.chains.retrieval import create_retrieval_chain
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from sentence_transformers import SentenceTransformer
+from langchain_core.embeddings import Embeddings
+from typing import List
 from dotenv import load_dotenv
 import os
 import google.generativeai as genai
@@ -19,8 +21,9 @@ import logging
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Config class
@@ -28,30 +31,46 @@ logger = logging.getLogger(__name__)
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 
+# Custom Embedding class using SentenceTransformer
+class SentenceTransformerEmbeddings(Embeddings):
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+        self.model = SentenceTransformer(model_name)
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        embeddings = self.model.encode(texts, convert_to_numpy=True)
+        return embeddings.tolist()
+
+    def embed_query(self, text: str) -> List[float]:
+        embedding = self.model.encode([text], convert_to_numpy=True)
+        return embedding[0].tolist()
+
+
 class Config:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-    PDF_DIRECTORY = './data'
-    EMBEDDING_MODEL = "models/embedding-001"
+    PDF_DIRECTORY = "./data"
+    EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # SentenceTransformer model
 
 
 # Initialize ChatGroq LLM
-llm = ChatGroq(model="llama3-70b-8192")
+llm = ChatGroq(model="openai/gpt-oss-120b")
 
 # Function to create embeddings
 
 
-def create_embeddings(pdf_dir: str = Config.PDF_DIRECTORY, model_name: str = Config.EMBEDDING_MODEL):
+def create_embeddings(
+    pdf_dir: str = Config.PDF_DIRECTORY, model_name: str = Config.EMBEDDING_MODEL
+):
     logger.info("Creating embeddings...")
-    embeddings = GoogleGenerativeAIEmbeddings(model=model_name)
+    embeddings = SentenceTransformerEmbeddings(model_name=model_name)
     loader = PyPDFDirectoryLoader(pdf_dir)
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     final_documents = text_splitter.split_documents(documents)
     vectors = FAISS.from_documents(final_documents, embeddings)
     logger.info("Embeddings created successfully.")
     return vectors
+
 
 # Function to get response from chain
 
@@ -61,18 +80,18 @@ def get_response_from_chain(llm, prompt_template, vectors, user_prompt, language
     document_chain = create_stuff_documents_chain(llm, prompt_template)
     retriever = vectors.as_retriever()
     retriever_chain = create_retrieval_chain(retriever, document_chain)
-    response = retriever_chain.invoke(
-        {'input': user_prompt, 'language': language})
-    answer = response.get('answer')
+    response = retriever_chain.invoke({"input": user_prompt, "language": language})
+    answer = response.get("answer")
     logger.info("Response generated successfully.")
     return answer
+
 
 # Define prompt templates
 
 
 def create_prompt_template_legal_expert():
     return ChatPromptTemplate.from_template(
-        '''
+        """
         You are an expert legal assistant with in-depth knowledge of legal intricacies, skilled at referencing and applying relevant laws, regulations, sections, and articles. Your role is to provide users with clear, concise, and actionable advice based strictly on legal principles.
         When responding to user queries:
 
@@ -91,13 +110,13 @@ def create_prompt_template_legal_expert():
         If the input is a greeting, respond politely by acknowledging the greeting and offering your assistance with legal advice.
         Your response should be delivered in {language} and should focus exclusively on providing relevant legal advice.
         Do not include any other word in any other language except {language} in the response.
-        '''
+        """
     )
 
 
 def create_prompt_template_educational_expert():
     return ChatPromptTemplate.from_template(
-        '''
+        """
         You are an expert educational assistant with a deep understanding of the Indian Constitution and related legal frameworks. Your role is to help users interpret, analyze, and explain questions, cases, and incidents within the context of constitutional law.
         When answering user questions, your responses should be:
 
@@ -117,12 +136,13 @@ def create_prompt_template_educational_expert():
         If the input is a greeting, respond politely and briefly acknowledge the greeting before asking how you can assist the user with constitutional law matters.
         Your response must analyze the question based on the provisions of the Indian Constitution and should be in {language} as specified by the user.
         Do not include any other word in any other language except {language} in the response.
-        '''
+        """
     )
+
 
 def create_prompt_template_summarize():
     return ChatPromptTemplate.from_template(
-        '''
+        """
         You are an expert constitutional article summarizer with in-depth knowledge of constitution, skilled at explaining things. Your role is to provide users with clear, concise summary of constitutional articles.
 
         If a query falls outside your expertise or you are unsure, simply state, "I don't know."
@@ -134,8 +154,9 @@ def create_prompt_template_summarize():
         
         Your response should be delivered in {language} and should be strictly in markdown language.
         Do not include any other word in any other language except {language} in the response.
-        '''
+        """
     )
+
 
 # Initialize embeddings
 vectors = create_embeddings()
@@ -162,13 +183,15 @@ prompt_template_summarize = create_prompt_template_summarize()
 async def get_response_educational(user_prompt: str, language: str):
     try:
         answer = get_response_from_chain(
-            llm, prompt_template_educational_expert, vectors, user_prompt, language)
+            llm, prompt_template_educational_expert, vectors, user_prompt, language
+        )
         answer = answer.replace("\n", "<br>")
         logger.info(f"Educational response: {answer}\n\n")
         return {"answer": answer}
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}\n")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Legal endpoint
 
@@ -177,24 +200,28 @@ async def get_response_educational(user_prompt: str, language: str):
 async def get_response_legal(user_prompt: str, language: str):
     try:
         answer = get_response_from_chain(
-            llm, prompt_template_legal_expert, vectors, user_prompt, language)
+            llm, prompt_template_legal_expert, vectors, user_prompt, language
+        )
         answer = answer.replace("\n", "<br>")
         logger.info(f"Legal response: {answer}\n\n")
         return {"answer": answer}
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}\n")
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
 @app.post("/get_summary")
 async def get_summary(user_prompt: str, language: str):
     try:
         answer = get_response_from_chain(
-            llm, prompt_template_summarize, vectors, user_prompt, language)
+            llm, prompt_template_summarize, vectors, user_prompt, language
+        )
         answer = answer.replace("\n", "<br>")
         logger.info(f"Summary: {answer}\n\n")
         return {"summary": answer}
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}\n")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # To run the application use: uvicorn main:app --reload
