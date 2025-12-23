@@ -1,0 +1,40 @@
+# Render Blueprint Configuration
+# See: https://render.com/docs/blueprint-spec
+
+services:
+  # Node.js Backend API
+  - type: web
+    name: nagrik-backend
+    runtime: node
+    region: singapore  # or oregon, frankfurt based on your preference
+    plan: free
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false  # Will be set manually in Render dashboard
+      - key: SECRET
+        sync: false  # Will be set manually in Render dashboard
+    healthCheckPath: /
+    autoDeploy: true
+
+  # Python ChatBot API
+  - type: web
+    name: nagrik-chatbot
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: ChatBot
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false  # Will be set manually in Render dashboard
+      - key: GOOGLE_API_KEY
+        sync: false  # Will be set manually in Render dashboard
+    autoDeploy: true
