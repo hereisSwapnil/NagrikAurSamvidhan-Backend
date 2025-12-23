@@ -1,8 +1,11 @@
 import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from langchain_community.document_loaders import PyPDFDirectoryLoader, UnstructuredURLLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import (
+    PyPDFDirectoryLoader,
+    UnstructuredURLLoader,
+)
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from dotenv import load_dotenv
@@ -17,10 +20,12 @@ from pymongo import MongoClient
 from bson import ObjectId
 
 # Set up logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    filename='app.log',
-                    filemode='a')
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    filename="app.log",
+    filemode="a",
+)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
@@ -52,7 +57,8 @@ def load_and_process_pdfs():
         loader = PyPDFDirectoryLoader("data/")
         documents = loader.load()
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, chunk_overlap=200)
+            chunk_size=1000, chunk_overlap=200
+        )
         splits = text_splitter.split_documents(documents)
 
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
@@ -76,14 +82,15 @@ except Exception as e:
 
 def insert_question(question_data):
     try:
-        question_data['type'] = 'CaseStudy'
+        question_data["type"] = "CaseStudy"
         # Default difficulty, adjust as needed
-        question_data['difficulty'] = 'Prarambhik'
+        question_data["difficulty"] = "Prarambhik"
         result = questions_collection.insert_one(question_data)
         return str(result.inserted_id)
     except Exception as e:
         logger.error(f"Failed to insert question into MongoDB: {e}")
         raise
+
 
 # Function to insert a case study into the case_studies collection
 
@@ -99,17 +106,16 @@ def insert_case_study(case_study_data):
 
 @app.get("/generate_case_study")
 async def get_news(request: Request, query: str):
-    logger.info(
-        f"Received request to generate case study for query: {query}")
-    url = 'https://newsapi.org/v2/everything'
+    logger.info(f"Received request to generate case study for query: {query}")
+    url = "https://newsapi.org/v2/everything"
     now = datetime.now()
     ten_days_ago = now - timedelta(days=10)
     params = {
-        'q': f'{query}'.format(query=query),
-        'from': ten_days_ago.strftime('%Y-%m-%d'),
-        'to': now.strftime('%Y-%m-%d'),
-        'pageSize': 50,
-        'apiKey': os.getenv('NEWS_API_KEY')
+        "q": f"{query}".format(query=query),
+        "from": ten_days_ago.strftime("%Y-%m-%d"),
+        "to": now.strftime("%Y-%m-%d"),
+        "pageSize": 50,
+        "apiKey": os.getenv("NEWS_API_KEY"),
     }
 
     # Modify parameters based on query parameters from the request
@@ -123,15 +129,16 @@ async def get_news(request: Request, query: str):
 
     # Check if the request was successful
     if response.status_code != 200:
-        logger.error(f"Failed to fetch news. Status code: {
-                     response.status_code}")
-        return JSONResponse(status_code=response.status_code, content={"error": "Failed to fetch news"})
+        logger.error(f"Failed to fetch news. Status code: {response.status_code}")
+        return JSONResponse(
+            status_code=response.status_code, content={"error": "Failed to fetch news"}
+        )
 
     # Parse the JSON response
     data = response.json()
 
     # Ensure there are articles in the response
-    if 'articles' not in data or not data['articles']:
+    if "articles" not in data or not data["articles"]:
         logger.warning("No articles found in the API response")
         return JSONResponse(status_code=404, content={"error": "No articles found"})
 
@@ -145,11 +152,11 @@ async def get_news(request: Request, query: str):
     #     return JSONResponse(status_code=404, content={"error": "No relevant articles found"})
 
     # print(filteredArticles)
-    selectedData = random.choice(data['articles'])
+    selectedData = random.choice(data["articles"])
     logger.info(f"Selected article: {selectedData['title']}")
 
     # Extract the URL from the selected article
-    url_data = selectedData['url']
+    url_data = selectedData["url"]
 
     # Load the news data
     logger.info(f"Loading news data from URL: {url_data}")
@@ -162,7 +169,7 @@ async def get_news(request: Request, query: str):
     relevant_docs = vector_store.similarity_search(news_text, k=3)
     context = "\n".join([doc.page_content for doc in relevant_docs])
 
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     case_study_prompt = f"""You are an AI simulating a human who crafts engaging and interactive case studies based on real news events.
     These case studies should delve into the Indian Constitution, specifically highlighting instances where fundamental rights and laws have been violated.
@@ -189,14 +196,17 @@ async def get_news(request: Request, query: str):
     case_study_response = model.generate_content(case_study_prompt)
 
     case_study_data = re.sub(
-        r'^```json\s*|\s*```$', '', case_study_response.text.strip())
+        r"^```json\s*|\s*```$", "", case_study_response.text.strip()
+    )
 
     try:
         case_study_data = json.loads(case_study_data)
     except json.JSONDecodeError as e:
         print(case_study_data)
         logger.error(f"JSON decoding error for case study data: {e}")
-        return JSONResponse(status_code=500, content={"error": "Failed to parse case study data"})
+        return JSONResponse(
+            status_code=500, content={"error": "Failed to parse case study data"}
+        )
 
     case_study_text = case_study_data["description"]
 
@@ -240,15 +250,16 @@ async def get_news(request: Request, query: str):
     # Extract the content from the generated response
     questions_text = response.text
 
-    questions_text = re.sub(r'^```json\s*|\s*```$',
-                            '', questions_text.strip())
+    questions_text = re.sub(r"^```json\s*|\s*```$", "", questions_text.strip())
 
     try:
         questions_text = json.loads(questions_text)
     except json.JSONDecodeError as e:
         print(questions_text)
         logger.error(f"JSON decoding error for questions data: {e}")
-        return JSONResponse(status_code=500, content={"error": "Failed to parse questions data"})
+        return JSONResponse(
+            status_code=500, content={"error": "Failed to parse questions data"}
+        )
 
     question_ids = []
     for question in questions_text:
@@ -262,8 +273,8 @@ async def get_news(request: Request, query: str):
         "duration": 60,
         "totalQuestions": len(question_ids),
         "difficulty": "Prarambhik",
-        "image": selectedData['urlToImage'],
-        "url": selectedData['url']
+        "image": selectedData["urlToImage"],
+        "url": selectedData["url"],
     }
 
     # Insert the case study
@@ -274,12 +285,14 @@ async def get_news(request: Request, query: str):
         **case_study_data,
         "_id": case_study_id,
         # Convert ObjectIds to strings for JSON response
-        "questions": [str(q_id) for q_id in question_ids]
+        "questions": [str(q_id) for q_id in question_ids],
     }
 
     return JSONResponse(content=final_response)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     logger.info("Starting the FastAPI application")
     uvicorn.run(app, host="0.0.0.0", port=8000)
